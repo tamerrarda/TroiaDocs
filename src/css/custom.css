@@ -1,0 +1,54 @@
+/**
+ * Troia documentation theme. Infima variable overrides + a few small components.
+ * Palette: a deep indigo/violet primary (settlement / trust), tuned for both light and dark.
+ */
+
+:root {
+  --ifm-color-primary: #5b46e5;
+  --ifm-color-primary-dark: #4530e0;
+  --ifm-color-primary-darker: #3a25d8;
+  --ifm-color-primary-darkest: #2f1eb3;
+  --ifm-color-primary-light: #7360ea;
+  --ifm-color-primary-lighter: #8272ec;
+  --ifm-color-primary-lightest: #a99df2;
+  --ifm-code-font-size: 92%;
+  --ifm-font-family-base: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --docusaurus-highlighted-code-line-bg: rgba(91, 70, 229, 0.1);
+}
+
+/* Lighter, higher-contrast palette for dark mode. */
+[data-theme='dark'] {
+  --ifm-color-primary: #a99df2;
+  --ifm-color-primary-dark: #8f80ee;
+  --ifm-color-primary-darker: #8272ec;
+  --ifm-color-primary-darkest: #5b46e5;
+  --ifm-color-primary-light: #c3baf6;
+  --ifm-color-primary-lighter: #d0c9f8;
+  --ifm-color-primary-lightest: #f0edfc;
+  --ifm-background-color: #0f1020;
+  --ifm-background-surface-color: #16172b;
+  --docusaurus-highlighted-code-line-bg: rgba(169, 157, 242, 0.15);
+}
+
+/* "Testnet PoC" badge in the navbar. */
+.navbar__badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border: 1px solid var(--ifm-color-primary);
+  border-radius: 999px;
+  color: var(--ifm-color-primary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+/* Slightly tighter, more "docs-portal" heading rhythm. */
+.markdown h1:first-child {
+  --ifm-h1-font-size: 2.4rem;
+}
+.markdown > h2 {
+  border-bottom: 1px solid var(--ifm-toc-border-color);
+  padding-bottom: 0.3rem;
+  margin-top: 2.4rem;
+}
