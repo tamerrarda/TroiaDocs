@@ -13,8 +13,8 @@ const config: Config = {
     v4: true, // Improve compatibility with the upcoming Docusaurus v4
   },
 
-  // Production url — set at the final Vercel deploy (placeholder until then).
-  url: 'https://troia-docs.vercel.app',
+  // Production url.
+  url: 'https://troiadocs.vercel.app',
   baseUrl: '/',
 
   organizationName: 'tamerarda',
