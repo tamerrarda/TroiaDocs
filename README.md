@@ -1,41 +1,20 @@
-# Website
+# Troia Documentation
 
-This website is built using [Docusaurus](https://docusaurus.io/), a modern static website generator.
+**Live site: [https://troiadocs.vercel.app](https://troiadocs.vercel.app)**
 
-## Installation
+The source for the Troia documentation site, built with [Docusaurus](https://docusaurus.io/). It covers the overview, architecture, reconciliation, scope and limitations, deployments, the live-smoke runbook, the demo script, and the roadmap.
 
-```bash
-yarn
-```
+Troia is a custodial TRY→USDC settlement bridge on Stellar: a Turkish shopper pays in lira with a Troy card, and the merchant is settled in USDC from a pre-funded pool.
 
-## Local Development
+## Local development
 
 ```bash
-yarn start
+npm install
+npm start
 ```
 
-This command starts a local development server and opens up a browser window. Most changes are reflected live without having to restart the server.
-
-## Build
-
-```bash
-yarn build
-```
-
-This command generates static content into the `build` directory and can be served using any static contents hosting service.
+`npm start` runs a local dev server with hot reload. `npm run build` produces the static site in `build/`.
 
 ## Deployment
 
-Using SSH:
-
-```bash
-USE_SSH=true yarn deploy
-```
-
-Not using SSH:
-
-```bash
-GIT_USER=<Your GitHub username> yarn deploy
-```
-
-If you are using GitHub pages for hosting, this command is a convenient way to build the website and push to the `gh-pages` branch.
+Every push to `main` auto-deploys to Vercel at [troiadocs.vercel.app](https://troiadocs.vercel.app).
