@@ -1,5 +1,5 @@
 ---
-sidebar_position: 5
+sidebar_position: 6
 title: Deployments
 description: Live Stellar testnet contract and account address table.
 ---
@@ -72,6 +72,27 @@ The payout itself, and its effects, are all on the explorer:
 That final row is the on-chain half of Troia's guarantee against paying a merchant twice. The operator's sequence number is the primary shield — the network accepts a given payout slot only once — and the contract's own record of paid orders is the backstop. The irreversible USDC leg can never pay one order twice.
 
 This same payout was also captured as offline evidence and re-verified with no network access at all: the recorded proof re-derives the outcome and confirms it matched what was intended. That evidence is reset-proof, because the operator's signature over the real transaction hash is embedded and cannot be forged; it still verifies after a test-network reset, even though the live settlement it points to only exists while the chain remembers it. See [Reconciliation](./reconciliation.md) for how this works.
+
+## The whole system, driven live
+
+The payout above was signed by hand to prove the on-chain leg in isolation. Two later runs drove the entire system: the demonstration storefront showed a payment request, the browser extension recognised it and opened iyzico's hosted form, a real Troy sandbox card paid the lira, and — only after that charge confirmed — the backend submitted the irreversible payout on its own. No step was hand-run.
+
+The first of these settled 74 USDC ([transaction](https://stellar.expert/explorer/testnet/tx/cd643d7178c6d6068aabe236af45e68fba60d9062d1ff71a85c5af75dfb08ded)). The second, on 10 July 2026, is the more interesting one, because it also exercised the crash-durable records and both chain watchers.
+
+| Check | Result |
+|---|---|
+| The shopper paid | 4,019.46 lira, on iyzico's hosted form with a Troy sandbox card |
+| The merchant was settled | 80 USDC ([transaction](https://stellar.expert/explorer/testnet/tx/d47f7fb92a149d61a6f576aa7f803d75e6d3b3dcb6b0119e5a12a7387683d1a5)) |
+| The audit found the settlement independently | By the identifier the pool contract itself indexes, derived from the order — not by the transaction hash Troia recorded |
+| The four checks before "reconciled" | The pool's code was never replaced; the amount announced equalled the amount the token contract moved; the transaction was still on the chain; the offline verification model agreed |
+| The books matched the chain | The accounting ledger and the pool's on-chain balance agreed to the last unit |
+| The pool grew by the commission | It paid out 80 USDC and was refilled with 85.81, from the lira that same order collected |
+
+The system was then killed and restarted against the same stored records. Nothing was re-booked, re-minted, or re-advanced. Troia's own payout was still recognised as one it had authorised, even though everything held in memory — including the list of orders — had been erased. No alarm was raised.
+
+:::note What this run did not prove
+No unauthorised transfer was staged, so the rogue-payout alarm has still never fired at a real thief; only the reverse was shown, that an authorised payout is never accused. The divergence verdict and the two "we could not see" states remain exercised in tests alone. One further caveat: alarms are printed to the server's log rather than saved, so unlike everything in the table above, "no alarm was raised" is an observation from that run rather than something a reader can re-derive from the repository. Both are listed on [Scope & limitations](./scope.md).
+:::
 
 ## Reproducing a deployment
 

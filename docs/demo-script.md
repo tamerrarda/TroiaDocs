@@ -1,20 +1,21 @@
 ---
-sidebar_position: 7
+sidebar_position: 8
 title: Demo script
 description: The short end-to-end demo walkthrough.
 ---
 
 This is a short, guided walkthrough of Troia from end to end. It is written to be run in front of a reviewer, but it also reads on its own as a tour of what the system does and why. The whole thing takes about four minutes and makes a single claim impossible to miss: Troia never silently loses money, and anyone can verify that for themselves, offline, in a few seconds.
 
-The walkthrough is deliberately honest about what is live today and what is still ahead. Some steps run against real code with nothing more than a checkout of the repository; others describe behaviour that is designed and tested but not yet wired to a live test network. Each part below says plainly which it is.
+The walkthrough is deliberately honest about what a viewer is watching. The runnable acts need nothing more than a checkout of the repository and no network connection at all; the closing act narrates a payment path that has since been driven twice, for real, on the test network. Each part below says plainly which it is.
 
 ## What the walkthrough shows
 
-The tour has three acts, and they build on one another:
+The tour has four acts, and they build on one another:
 
 1. **The code is real and under test.** Everything compiles, the test suites pass, and the linters are clean.
 2. **You can check the money yourself, offline.** An independent tool re-derives every payment's outcome from published evidence, agrees with an honest report, and rejects a tampered one.
 3. **The money moves in a safe order.** A narrated walk through the payment lifecycle, keeping the honest line between what Troia signed and what actually settled on-chain.
+4. **It has been done for real.** A card charge on the test network drives a payout on Stellar, and the books come back matching the chain.
 
 The second act is the heart of it. It is the one thing a reviewer cannot get anywhere else: the ability to confirm, without trusting Troia or touching its servers, that each payment settled exactly as intended.
 
@@ -58,12 +59,18 @@ It exits successfully, and that success is meaningful for three reasons worth na
 Then break it on purpose. Point the same verifier at a tampered report — one whose stated outcomes have been edited to lie about what really happened:
 
 ```bash
-node --import ./packages/reconciler/bin/block-net.mjs \
-     ./packages/reconciler/bin/verify.mjs \
-     ./packages/reconciler/test/fixtures/recon-report.tampered.json
+just verify-tampered
 ```
 
-This run fails. A report that lies about its own outcome cannot pass, because the tool recomputes every verdict and refuses to accept a claim the evidence does not support. That is the whole guarantee, in one command. The full model behind it is on the [Reconciliation](./reconciliation.md) page.
+This run fails, and the failure is the point. A report that lies about its own outcome cannot pass, because the tool recomputes every verdict and refuses to accept a claim the evidence does not support.
+
+One more command is worth typing, because it is the strongest evidence Troia has and it too runs with the network blocked. It re-verifies a report captured from a payout that genuinely landed on the test network:
+
+```bash
+just verify-live
+```
+
+That is the whole guarantee, in three commands. The full model behind it is on the [Reconciliation](./reconciliation.md) page.
 
 ## Act 3 — How the money moves
 
@@ -80,6 +87,14 @@ A single payment proceeds like this:
 Throughout, the storefront sees only a coarse status: pending, then processing, then completed, or else failed or under review. The USDC leg is never exposed to the merchant's checkout.
 
 Close on the honest boundary. Troia proves what it signed with cryptography that survives a restart, and what settled while the chain still remembers it — and it never blurs the two.
+
+## Act 4 — It has been done for real
+
+The narration in Act 3 is not hypothetical. Twice now, a shopper has paid a Troy sandbox card on iyzico's hosted form and a merchant has been settled in USDC on Stellar, with every step in between running unattended. The most recent run settled 80 USDC; the accounting ledger and the pool's on-chain balance agreed to the last unit, and the pool came back larger than it went out because the shopper had paid the commission.
+
+The run can be shown rather than described: open the transaction on a public block explorer, and open the [Deployments](./deployments.md) page beside it. Say out loud what the [Scope & limitations](./scope.md) page also says — that no unauthorised transfer was ever staged, so the alarm that would catch a thief has never yet caught one. Volunteering that is more persuasive than the payout itself.
+
+If there is time, kill the server and start it again. Nothing is paid, recorded, or refilled twice, and the settled order still answers for itself — because everything Troia knows about money reached the disk before it was believed.
 
 :::tip Recording a video
 If you capture this as a video, keep it to three to five minutes and give Act 2 the most room. Show the exit codes explicitly so the pass and the fail are unambiguous. Never fake a payment. End on the tampered-report failure; it is the most memorable and the most convincing beat.

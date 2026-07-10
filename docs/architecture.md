@@ -16,7 +16,7 @@ Three parties take part, and each sees only its own side of the transaction.
 - **The merchant** receives an ordinary USDC payment on Stellar. They never see the lira that funded it.
 - **Troia** sits between them. It owns the currency conversion and the settlement risk, and it keeps a pre-funded pool of USDC so the merchant can be paid immediately, without waiting for the lira to arrive.
 
-Because the pool is funded in advance, the merchant is paid at once. The only party who waits is the shopper, for the few seconds it takes the payment to settle on-chain.
+Because the pool is funded in advance, the merchant is paid at once. The only party who waits is the shopper, for the ten to forty-five seconds it takes the payment to settle on-chain.
 
 ## The order of operations is the safety
 
@@ -90,7 +90,27 @@ Three consequences follow:
 - **Rebalancing means turning collected lira back into USDC.** Only once iyzico releases the held lira can Troia buy replacement USDC and top the pool back up. In production this is a real purchase on an exchange; on the test network it is simulated by minting test USDC. Either way it is recorded in the accounting ledger so the books stay in step with the on-chain balance.
 - **The price already accounts for the wait.** Because Troia pays out at today's rate and only buys replacement USDC weeks later at an unknown rate, the commission it charges includes a buffer sized to that delay. The cost of the settlement window is priced in before any rebalancing happens.
 
-In the current proof-of-concept, rebalancing is available but not yet automatic: the pool is funded manually, and a low-balance threshold only raises a warning rather than topping up on its own. Automatic rebalancing and real exchange purchases are planned for a later, production-oriented phase, where the test network's unlimited minting is replaced by genuine inventory.
+In the current proof-of-concept, rebalancing runs on its own. A background worker watches every settled order and, once its holding period has elapsed — compressed to about thirty seconds for the demonstration, against the roughly three weeks of the real thing — refills the pool from the lira that order collected, at the live exchange rate. Because the shopper paid the commission on top of the mid-market rate, the pool comes back slightly larger than it went out: it grows by the margin. A low-balance threshold now only warns, because it is no longer the trigger.
+
+What is still simulated is the purchase itself. On the test network the refill mints Troia's own test USDC; in production the same step becomes a genuine trade on an exchange, behind an interface that already exists and is exercised on every settlement. The decision of when and how much to rebalance, and the execution of the trade, are deliberately separate, so production replaces one implementation rather than the logic around it.
+
+## Surviving a crash
+
+A system that moves money has to be able to say, after the lights come back on, what it had already done. Troia's rule is that no fact about money is believed in memory until it has first been written to disk. The files it writes to are append-only, and the rules for what a crash may do to them are stated rather than hoped for.
+
+A record that was only half written can, by construction, only ever be the last thing in a file: the first failed write poisons the file permanently, so nothing can ever be appended after it to bury the damage in the middle. Such a torn ending is repaired on the next start and reported. A record that was fully written and later found to be damaged is a different matter entirely — the writing had finished, so the damage came afterwards — and Troia refuses to start rather than quietly discard a payment it had committed to. If the store ever rejects a write at all, the process stops, because a system that cannot record what it is doing must not keep doing it.
+
+Seven such files hold, between them, the accounting ledger, the evidence for each settlement, the identity of every payout authorised before it was broadcast, what the chain was observed to say, which orders have been reconciled, and the payout watcher's place in the chain's history. Not everything is durable, and the boundary is drawn on purpose; the [Scope & limitations](./scope.md) page says exactly what a restart still forgets and why that fails safely.
+
+## The chain answers for itself
+
+Troia does not take its own word for what happened. Two background watchers read the blockchain directly and are built so that neither can be talked out of the truth by a bug elsewhere in the system.
+
+The first watches money leaving the pool. It reads the token contract's own transfer records rather than the pool's announcements about itself, because a pool whose code had been replaced could move funds without announcing anything, while the token contract cannot be persuaded to stay silent. It can accuse with confidence for one reason: a payout's identity is written to disk *before* the transaction is broadcast, so a transaction cannot possibly have landed unless its identity was already recorded. Money that left the pool without a matching record was therefore never authorised — not "not yet noticed", not "still settling". There is no timing window to get wrong, and no in-memory list a restart could erase.
+
+The second watches settlements. It finds an order's settlement by the identifier the pool contract itself indexes, which is derived from the order — not by the transaction hash Troia recorded. Looking it up by Troia's own hash would only ask Troia's records to confirm Troia's records. Four things must all hold before an order is called reconciled: the pool's code was never replaced, the amount the pool announced equals the amount the token contract actually moved, the transaction is still on the chain, and the offline verification model agrees. A chain it cannot reach concludes nothing at all.
+
+The two are complements. A separate tripwire compares the accounting ledger's idea of the pool balance against the chain's, which is always right about the total but cannot name a transaction; the watcher names it, at the price of a limited window into the chain's memory. Where that window falls short, Troia says it could not see rather than accusing anyone, and every alarm is raised once per problem rather than repeated on every pass.
 
 ## The guarantees
 
@@ -105,6 +125,8 @@ Each of the following guarantees is owned by a single, well-defined part of the 
 | The shopper is charged exactly the quoted price | The lira price is computed and frozen server-side; the payment form charges that and only that |
 | A charge is never processed twice | A combination of a backend guard, a server-issued token, and a re-check of the outcome |
 | A failed payout returns the shopper's money | A post-charge failure cancels the same-day sale automatically |
+| A fact about money is never believed before it is written down | Every writer appends to an append-only file first, and a refused write stops the process |
+| Money cannot leave the pool unnoticed | A payout's identity is recorded before it is broadcast, so an unrecorded outflow was never authorised |
 
 ## Pricing
 

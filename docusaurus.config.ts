@@ -88,7 +88,7 @@ const config: Config = {
           title: 'More',
           items: [
             {label: 'Scope & limitations', to: '/scope'},
-            {label: 'Roadmap', to: '/roadmap'},
+            {label: 'Toward mainnet', to: '/toward-mainnet'},
           ],
         },
       ],

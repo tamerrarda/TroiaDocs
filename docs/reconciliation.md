@@ -1,7 +1,7 @@
 ---
 sidebar_position: 3
 title: Reconciliation
-description: The reviewer-verifiable centerpiece — matching each order to its on-chain USDC settlement.
+description: The reviewer-verifiable centrepiece — matching each order to its on-chain USDC settlement.
 ---
 
 Reconciliation is how Troia turns "trust us" into "check for yourself". For every payment, Troia keeps a small bundle of evidence and ships an offline tool that re-derives the outcome from that evidence alone. If Troia's claim about a payment disagrees with what the evidence proves, the tool fails. This page explains what is proven, how the check reaches its verdict, and how a reviewer can run it in a few seconds.
@@ -86,6 +86,18 @@ The verifier deliberately ignores the verdicts and summary written in the report
 
 A second, tampered copy of the sample report demonstrates the failure mode: it flips the third order's stored verdict to "matched" while leaving the evidence untouched. Run against that copy, the verifier re-derives the true verdict, finds it disagrees with the stored one, and fails — naming the order and the mismatch between the claimed and the recomputed result. A report that lies about its own outcome cannot pass, which is the entire point.
 
+## The other reconciliation: the one Troia does to itself
+
+Everything above describes the artifact a reviewer checks after the fact, offline. The running system also reconciles continuously against the live chain, and it does not trust anything it announced about itself.
+
+One watcher asks whether money left the pool that no order authorised. It reads the token contract's own record of transfers rather than the pool's announcements, because a pool whose code had been replaced could drain itself without announcing anything, while the token contract cannot be persuaded to stay silent. Every payout's identity is written to disk before its transaction is broadcast, so a transaction cannot have landed unless that identity was already recorded. Money that left without a matching record was therefore never authorised — not "not yet noticed", not "still settling". That is why the alarm needs no waiting period to be correct, and why a restart cannot erase the list it checks against.
+
+The other watcher asks whether each order's settlement really happened, and whether it was the one Troia announced. It finds the settlement by the identifier the pool contract itself indexes — derived from the order — rather than by the transaction hash Troia recorded, because looking it up by Troia's own hash would only ask Troia's records to confirm Troia's records. Four things must all hold before an order is called reconciled: the pool's code was never replaced, the amount the pool announced equals the amount the token contract actually moved, the transaction is still on the chain, and the verdict procedure above returns a match. A chain it cannot reach concludes nothing and simply asks again.
+
+The two are complements rather than duplicates. A separate tripwire compares the accounting ledger's idea of the pool balance against the chain's: it is always right about the total but cannot name a transaction. The watcher names it, and pays for that with a limited window into the chain's memory — roughly a week of contract history on the node Troia reads. Where that window falls short, it says it could not see rather than accusing anyone.
+
+Both watchers have now run against the live chain and reconciled a real payout of 80 USDC, finding it by the pool contract's own index. See [Deployments](./deployments.md), which also records what those runs did *not* prove.
+
 ## Reset-proof, and honest about the limits
 
 The two kinds of proof age differently, and the reconciler is candid about which is which.
@@ -96,5 +108,11 @@ The two kinds of proof age differently, and the reconciler is candid about which
 :::caution
 The transaction in the sample report is a genuine, decodable call to the pool's pay operation, but it is a demonstration artifact with no on-chain footprint — real to verify, but not itself something the network would accept. The live settlement client produces the submittable transaction that actually lands on the test network. The reconciliation model is identical in both cases; only the origin of the transaction differs.
 :::
+
+A third command goes further still. It re-verifies a report captured from a payout that genuinely landed on the test network, and does so with the network blocked, so the strongest evidence Troia has is also the evidence a reviewer can check without touching anything:
+
+```bash
+just verify-live
+```
 
 The bottom line for a reviewer is simple: clone the repository, run the verify command, and watch it pass on the honest report and fail on the tampered one — offline, in seconds, without trusting a word written here. For how reconciliation fits into the wider system, see the [Architecture](./architecture.md) page; for what is deliberately out of scope in the current proof-of-concept, see [Scope & limitations](./scope.md).

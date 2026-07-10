@@ -32,14 +32,21 @@ The two halves of a payment behave differently when something goes wrong. Sendin
 
 Paying a merchant twice for one order is ruled out by construction. Each payout is pinned to a specific Stellar sequence number — the one-time counter the network uses to order an account's transactions — and the network accepts a given number only once, so a duplicate attempt is simply rejected. As a second line of defence, the pool contract itself records which orders it has already paid and refuses to pay the same one again.
 
+## It has been done for real
+
+Twice now, a shopper has paid a Troy card on iyzico's hosted form and a merchant has been settled in USDC on Stellar, with every step in between running on its own. The most recent run settled 80 USDC and is recorded, transaction by transaction, on the [Deployments](./deployments.md) page. The accounting matched the chain to the last unit; the server was then killed and restarted, and nothing was paid, minted, or recorded twice.
+
+That last part is not incidental. Everything Troia knows about money is written to disk before it is believed, and two background watchers read the blockchain directly rather than trusting Troia's own account of events — one to notice money leaving the pool that nobody authorised, the other to re-check each settlement against the chain by an identifier the pool contract itself keeps.
+
 ## Where to go next
 
-- **[Architecture](./architecture.md)** — the settlement ordering, the life of a payment, the two Stellar entities, the treasury and its cash-flow cycle, and the guarantees behind each step.
+- **[Architecture](./architecture.md)** — the settlement ordering, the life of a payment, the two Stellar entities, the treasury and its cash-flow cycle, how the system survives a crash, and the guarantees behind each step.
 - **[Reconciliation](./reconciliation.md)** — the centrepiece: how each order is matched to the chain so a reviewer can verify it independently.
 - **[Scope & limitations](./scope.md)** — what is proven, and what is a deliberate test-network boundary, framed honestly.
-- **[Deployments](./deployments.md)** — the live test-network address table.
+- **[Toward mainnet](./toward-mainnet.md)** — what stands between the proof-of-concept and a system that moves real money.
+- **[Deployments](./deployments.md)** — the live test-network address table, and the runs that prove the money path.
 - **[Live-smoke run](./live-smoke.md)** — how a real Troy-card charge drives a real on-chain payout.
-- **[Demo script](./demo-script.md)** and **[Roadmap](./roadmap.md)** — a guided walk-through and what comes next.
+- **[Demo script](./demo-script.md)** — a guided walk-through of the whole flow.
 
 :::note Status
 This is a proof-of-concept running on the Stellar test network. The USDC is Troia's own test mint, iyzico runs in sandbox mode with valueless test cards, and no real money moves. The boundaries between this proof-of-concept and a production system are documented plainly in [Scope & limitations](./scope.md).

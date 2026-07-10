@@ -1,8 +1,12 @@
 ---
-sidebar_position: 6
+sidebar_position: 7
 title: Live-smoke run
 description: Runbook for driving a real Troy-card charge into a real on-chain payout.
 ---
+
+:::note Executed
+This run has been driven twice, end to end. A real Troy sandbox card charge automatically drove a real on-chain payout; the second run also exercised the crash-durable records and both chain watchers, and survived a deliberate restart. The evidence is on the [Deployments](./deployments.md) page. This page remains the runbook for reproducing it.
+:::
 
 This page is a runbook. It walks an operator through the whole of Troia end to end on the test network: a genuine card charge on one side, driving a genuine payout on Stellar on the other, with nothing faked in between. Follow the steps in order and you will watch a single payment travel the full length of the system.
 
@@ -28,6 +32,7 @@ Before starting, make sure the following are in place:
 - **The toolchain** listed on [the Overview](/): Node 22, pnpm, Rust with the `wasm32v1-none` target, the Stellar CLI at version 26.0.0, and `just`.
 - **An iyzico sandbox account.** Register free at `sandbox-merchant.iyzipay.com` and copy the `apiKey` and `secretKey` into your `.env` file. No dashboard webhook needs configuring for this run: settlement is driven by Troia's own poll worker pulling the sale's status on an authenticated schedule, not by a server-to-server notification from iyzico.
 - **A callback URL for the customer's browser to return to.** For a local run — the case this runbook describes — no public tunnel is needed: the iyzico sandbox accepts a `http://localhost:3000/return` callback, because the customer's browser is on the same machine as the backend. A public tunnel (`cloudflared`, `ngrok`, or any HTTPS reverse tunnel) is only required if the browser and the backend run on different machines.
+- **The issuer key.** Starting the backend now also requires `TROIA_ISSUER_SECRET`, the key that signs the automatic top-up which returns collected lira to the pool as USDC. It is deliberately separate from the operator key that signs payouts, and the boot fails closed without it.
 - **A filled-in `.env`**, copied from `.env.example` and completed with the secrets listed there. Both `.env` and `deployment.testnet.json` are excluded from source control.
 
 ## Step 1 — Deploy the rails
@@ -68,7 +73,7 @@ This return page is only where the customer's browser lands after paying. The ac
 
 ## Step 4 — Start the backend
 
-Bring up the backend. On boot it reads `.env` and `deployment.testnet.json`, seeds its view of the pool balance and the operator's sequence number directly from the chain with two live reads, starts the Fastify server, and launches the poll-and-recovery worker. A bad configuration value fails the boot outright rather than degrading silently. Leave it running.
+Bring up the backend. On boot it reads `.env` and `deployment.testnet.json`, opens the append-only files it will record to, books the pool's opening balance into the accounting ledger, seeds its view of the pool balance and the operator's sequence number directly from the chain with two live reads, starts the Fastify server, and launches five background loops: the poll-and-recovery worker, the automatic top-up that returns collected lira to the pool, the tripwire that compares the books against the chain, and the two watchers that read the chain for unauthorised outflows and for settlements to reconcile. A bad configuration value fails the boot outright rather than degrading silently. Leave it running.
 
 ```bash
 just serve
@@ -76,7 +81,7 @@ just serve
 
 ## Step 5 — Drive one real charge
 
-Now create a single payment. A helper script stands in for the eventual storefront: it ensures a demo merchant with a USDC trustline exists, derives the order's memo — the identifier that ties an on-chain transfer back to its order — exactly as the backend would, and submits the payment intent.
+Now create a single payment. The demonstration storefront and the browser extension are the primary driver — together they drove both proven runs — and the helper script below is the headless alternative for a run without a browser: it ensures a demo merchant with a USDC trustline exists, derives the order's memo — the identifier that ties an on-chain transfer back to its order — exactly as the backend would, and submits the payment intent.
 
 ```bash
 node scripts/intent.mjs
@@ -114,7 +119,7 @@ The expected result identifies the revert as the already-processed case. If inst
 
 None of these block the run; each is a deliberate, honest boundary of a proof-of-concept, and each fails on the safe side. The [Scope & limitations](./scope.md) page covers them in full.
 
-- **The store and journal are single-process.** That is correct for a one-process run, but a restart loses the in-flight record of a payment mid-flight. This fails safe — the payment is re-driven, never double-paid. A durable store is the swap for production.
+- **The orders are single-process; the money facts are not.** Seven append-only files survive a restart — the accounting ledger, the settlement evidence, the record of every authorised payout, what the chain was observed to say, which orders are reconciled, and the payout watcher's place. The orders themselves, the pool reservations, and the operator's counter do not, so a payout that was submitted but has not yet landed is forgotten. That fails safe: the contract's own record of paid orders and the single-use counter each cap delivery at one payout per order. A settled order still answers correctly after a restart, from the durable evidence. See [Scope & limitations](./scope.md).
 - **The pricing oracle requires all its sources.** If an exchange is unreachable, the quote fails closed and is retried — the money-safe default. A brief wobble is absorbed by the bounded retry; a sustained outage means pausing rather than guessing a price.
 - **The same-day void path is not part of the happy path.** The reversal that returns a shopper's money is only exercised when a charge succeeds but the USDC leg cannot settle, so a clean end-to-end run does not touch it.
 
