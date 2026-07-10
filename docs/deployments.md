@@ -46,7 +46,7 @@ These four transactions built the deployment, in order: they created the USDC as
 | Seed the pool with the first 1,000 USDC | [tx](https://stellar.expert/explorer/testnet/tx/03e69a9552ae11dd9cebbf6e5d4fd947d2222f42eb6fc73451e7ea02cdd93609) |
 | Top the pool up to 100,000 USDC | [tx](https://stellar.expert/explorer/testnet/tx/5f224b9b0d02ad40b6aa42e8527aa836e0daa95b8d97aa796e77ec06984fc8e4) |
 
-After seeding, the pool reports a balance of 100,000 USDC, an unpaused state, and the administrator and operator addresses listed above — all readable directly from the contract on the explorer.
+Immediately after seeding, the pool held 100,000 USDC. That figure is a starting point rather than a standing one: every payout lowers it and every automatic refill raises it, so the balance the explorer shows today will not be 100,000 and is not meant to be. What does still read straight off the contract, and should be checked, is that the pool is unpaused and that its administrator and operator are the addresses listed above.
 
 ## A real payout, verified on-chain
 

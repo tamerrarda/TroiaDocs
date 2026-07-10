@@ -30,8 +30,8 @@ Offline, the network-facing code is type-checked and exercised against fakes. Th
 Before starting, make sure the following are in place:
 
 - **The toolchain** listed on [the Overview](/): Node 22, pnpm, Rust with the `wasm32v1-none` target, the Stellar CLI at version 26.0.0, and `just`.
-- **An iyzico sandbox account.** Register free at `sandbox-merchant.iyzipay.com` and copy the `apiKey` and `secretKey` into your `.env` file. No dashboard webhook needs configuring for this run: settlement is driven by Troia's own poll worker pulling the sale's status on an authenticated schedule, not by a server-to-server notification from iyzico.
-- **A callback URL for the customer's browser to return to.** For a local run — the case this runbook describes — no public tunnel is needed: the iyzico sandbox accepts a `http://localhost:3000/return` callback, because the customer's browser is on the same machine as the backend. A public tunnel (`cloudflared`, `ngrok`, or any HTTPS reverse tunnel) is only required if the browser and the backend run on different machines.
+- **An iyzico sandbox account.** Register free at `sandbox-merchant.iyzipay.com`, then copy the account's API key and secret into `.env` as `IYZICO_API_KEY` and `IYZICO_SECRET_KEY`. No dashboard webhook needs configuring for this run: settlement is driven by Troia's own poll worker pulling the sale's status on an authenticated schedule, not by a server-to-server notification from iyzico.
+- **A public tunnel.** Both proven runs put a public HTTPS tunnel in front of the backend — `cloudflared`, `ngrok`, or any HTTPS reverse tunnel will do — and gave iyzico that address as the page to return the customer's browser to. A plain `localhost` callback may well work when the browser and the backend share a machine, but that path has never been exercised here, so this runbook describes the one that has.
 - **The issuer key.** Starting the backend now also requires `TROIA_ISSUER_SECRET`, the key that signs the automatic top-up which returns collected lira to the pool as USDC. It is deliberately separate from the operator key that signs payouts, and the boot fails closed without it.
 - **A filled-in `.env`**, copied from `.env.example` and completed with the secrets listed there. Both `.env` and `deployment.testnet.json` are excluded from source control.
 
@@ -59,15 +59,19 @@ It verifies that the operator key matches the deployment, that the operator hold
 An exit code of 0 means ready; 1 means something is red. Do not proceed until preflight is green.
 :::
 
-## Step 3 — Set the callback URL
+## Step 3 — Open the tunnel, set the callback URL
 
-After payment, iyzico redirects the customer's browser to a return page. For a local run, point it straight at your local backend:
+After payment, iyzico redirects the customer's browser to a return page. Open a public tunnel to the backend and give iyzico its address. In a dedicated terminal:
+
+```bash
+cloudflared tunnel --url http://localhost:3000
+```
+
+It prints a public HTTPS URL. Put that URL, with `/return` appended, into `.env`:
 
 ```
-TROIA_CALLBACK_URL=http://localhost:3000/return
+TROIA_CALLBACK_URL=https://<your-tunnel>.trycloudflare.com/return
 ```
-
-The sandbox accepts a localhost callback because the browser is on the same machine, so no tunnel is needed. If you run the backend on a different machine than the browser, open a public tunnel instead — for example `cloudflared tunnel --url http://localhost:3000` — and use its HTTPS URL with `/return` appended.
 
 This return page is only where the customer's browser lands after paying. The actual settlement happens separately, through the poll worker's server-side pull, so this URL is a landing page and nothing more.
 

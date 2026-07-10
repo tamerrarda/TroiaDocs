@@ -34,7 +34,7 @@ Paying a merchant twice for one order is ruled out by construction. Each payout 
 
 ## It has been done for real
 
-Twice now, a shopper has paid a Troy card on iyzico's hosted form and a merchant has been settled in USDC on Stellar, with every step in between running on its own. The most recent run settled 80 USDC and is recorded, transaction by transaction, on the [Deployments](./deployments.md) page. The accounting matched the chain to the last unit; the server was then killed and restarted, and nothing was paid, minted, or recorded twice.
+The full flow has been exercised repeatedly: a shopper pays with a Troy card on iyzico's hosted form, and a merchant is settled in USDC on Stellar, with every step in between running on its own. One representative run — settling 80 USDC — is recorded, transaction by transaction, on the [Deployments](./deployments.md) page. The accounting matched the chain to the last unit; the server was then killed and restarted, and nothing was paid, minted, or recorded twice.
 
 That last part is not incidental. Everything Troia knows about money is written to disk before it is believed, and two background watchers read the blockchain directly rather than trusting Troia's own account of events — one to notice money leaving the pool that nobody authorised, the other to re-check each settlement against the chain by an identifier the pool contract itself keeps.
 
