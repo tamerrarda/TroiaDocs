@@ -108,7 +108,7 @@ Troia does not take its own word for what happened. Two background watchers read
 
 The first watches money leaving the pool. It reads the token contract's own transfer records rather than the pool's announcements about itself, because a pool whose code had been replaced could move funds without announcing anything, while the token contract cannot be persuaded to stay silent. It can accuse with confidence for one reason: a payout's identity is written to disk *before* the transaction is broadcast, so a transaction cannot possibly have landed unless its identity was already recorded. Money that left the pool without a matching record was therefore never authorised — not "not yet noticed", not "still settling". There is no timing window to get wrong, and no in-memory list a restart could erase.
 
-The second watches settlements. It finds an order's settlement by the identifier the pool contract itself indexes, which is derived from the order — not by the transaction hash Troia recorded. Looking it up by Troia's own hash would only ask Troia's records to confirm Troia's records. Four things must all hold before an order is called reconciled: the pool's code was never replaced, the amount the pool announced equals the amount the token contract actually moved, the transaction is still on the chain, and the offline verification model agrees. A chain it cannot reach concludes nothing at all.
+The second watches settlements. It finds an order's settlement by the identifier the pool contract itself indexes, which is derived from the order — not by the transaction hash Troia recorded. Looking it up by Troia's own hash would only ask Troia's records to confirm Troia's records. Five things must all hold before an order is called reconciled: the settlement is found under the order's own identifier at all, the pool's code was never replaced, the amount the pool announced equals the amount the token contract actually moved, the transaction is still on the chain, and the offline verification model agrees. A chain it cannot reach concludes nothing at all.
 
 The two are complements. A separate tripwire compares the accounting ledger's idea of the pool balance against the chain's, which is always right about the total but cannot name a transaction; the watcher names it, at the price of a limited window into the chain's memory. Where that window falls short, Troia says it could not see rather than accusing anyone, and every alarm is raised once per problem rather than repeated on every pass.
 
@@ -138,7 +138,9 @@ Reconciliation is how Troia turns "trust us" into "verify it yourself". For ever
 
 ## Keys and configuration
 
-Troia keeps three separate keys, even on the test network, so that no single one can do everything: an administrator key that governs the contract, an operator key that signs payouts, and an issuer key that mints the test USDC. Alongside these are the credentials for the payment processor. Every secret lives only in local environment files and is never committed to source control. Everything specific to a particular network — addresses, endpoints, and identifiers — is supplied as configuration rather than written into the logic, so moving from test to production is a change of settings, not a change of code.
+Troia keeps three separate keys, even on the test network, so that no single one can do everything: an administrator key that governs the contract, an operator key that signs payouts, and an issuer key that mints the test USDC. Alongside these are the credentials for the payment processor. Every secret lives only in local environment files and is never committed to source control.
+
+The public half is deliberately the opposite. The record of the one deployment — the pool, the contracts, and the public addresses above — is committed to the repository, because every value in it is public and committing it is what makes "one pool, unchanging" true for every clone rather than something each machine re-invents. Everything specific to a particular network is supplied as that configuration rather than written into the logic, so moving from test to production is a change of settings, not a change of code.
 
 ## Key design decisions
 
@@ -152,7 +154,7 @@ The choices below shape the system; each was made deliberately and is treated as
 6. **Fail closed on identity.** A payout with a missing or invalid destination or memo is rejected outright.
 7. **A pre-funded, custodial pool.** Troia carries the float and the risk so the merchant is paid instantly.
 8. **A gateway-aware browser extension.** The extension recognises a supported checkout and offers to pay with a Troy card; it holds no keys and signs nothing, and always falls back to a manual option.
-9. **Every dependency behind an interface.** Payment processor, exchange, and signing are all swappable, so production is a matter of configuration and a few concrete implementations.
+9. **Every dependency behind an interface.** Payment processor, exchange, and signing are all swappable, so production is a matter of configuration and a few concrete implementations — plus a re-check of the timing budget and the closing of two named engineering gaps. It is deliberately not a switch to flip; [Toward mainnet](./toward-mainnet.md) says exactly what is left.
 10. **Test network today, regulated production later.** Going live is treated as a separate, regulated phase rather than a flip of a switch.
 
 For anyone who wants the full engineering detail behind these decisions, the [Reconciliation](./reconciliation.md) and [Scope & limitations](./scope.md) pages go deeper, and the [Live-smoke run](./live-smoke.md) shows the whole flow working end to end on the test network.

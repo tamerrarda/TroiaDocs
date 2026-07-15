@@ -4,13 +4,19 @@ title: Toward mainnet
 description: What stands between the proof-of-concept and a system that moves real money.
 ---
 
-The test network proves that Troia is correct. It cannot prove that Troia is ready to hold someone's money. Four things stand between the two, and none of them is a rewrite: the settlement logic, the defences against double payment, the pricing, and the verification tool all stay exactly as they are. What changes is configuration, three provider implementations, and one careful re-validation of the timing budget against the payment processor's real settlement hold — the figure the sandbox cannot reveal.
+The test network proves that Troia is correct. It cannot prove that Troia is ready to hold someone's money. Five things stand between the two, and none of them is a rewrite: the settlement logic, the defences against double payment, the pricing, and the verification tool all stay exactly as they are. What changes is configuration, three provider implementations, one careful re-validation of the timing budget against the payment processor's real settlement hold — the figure the sandbox cannot reveal — and two engineering gaps that a proof-of-concept could not honestly close, because closing them changes how the money path behaves after a crash and neither fix could be exercised for real on a network where nothing is at stake.
 
 ## Buying the USDC rather than minting it
 
 Today the pool is refilled automatically, but with test USDC that Troia issues to itself. Production replaces that single step with a genuine purchase on an exchange, funded by the lira the payment processor releases after its settlement hold.
 
 The change is contained on purpose. The decision of when and how much to rebalance is already separate from the execution of the trade, and both interfaces are exercised on every settlement today. What production supplies is one new implementation behind the second of them — and the working capital to stand behind it, which is the part that costs money rather than engineering.
+
+## Writing the refill down before it happens
+
+The refill has a gap of its own, and it is the reason the step above cannot be taken on its own. The guard that stops an order from being refilled twice is durable, but it is consulted *before* the top-up moves and only recorded *after* it has landed. A crash in between leaves a top-up that happened and was never written down; on restart the order looks unrefilled and does it again.
+
+On the test network that misfires in the harmless direction — the pool ends up holding more than the books claim, so nobody is short-changed — but the books and the chain then disagree forever, and an alarm that can never be cleared is an alarm people learn to ignore. In production the same window spends real lira twice. So the exchange purchase does not retire this bug; it is what makes it expensive, and the fix has to land before or with it. The fix itself is not new: it is the discipline the payout path already follows, which writes down what it is about to do before it does it. The refill is simply the one money path that does not yet.
 
 ## A durable store for orders
 

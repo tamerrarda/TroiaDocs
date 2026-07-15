@@ -57,6 +57,10 @@ const config: Config = {
     },
     navbar: {
       title: 'Troia',
+      logo: {
+        alt: 'Troia logo',
+        src: 'img/troia-logo.png',
+      },
       items: [
         {
           type: 'html',

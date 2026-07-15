@@ -17,6 +17,8 @@ Troy is Turkey's domestic card scheme, and that domesticity is its limit: a Troy
 
 Troia closes that gap. The shopper pays Troia in lira with their Troy card, in exactly the domestic setting where it works, and Troia settles the merchant abroad in USDC on Stellar. A domestic card thus reaches an international merchant it otherwise could not; the merchant, for its part, simply receives an ordinary crypto payment — funded, converted, and reconciled by Troia, which absorbs both the currency conversion and the risk that the exchange rate moves during the days-long settlement window.
 
+In practice, a shopper never installs a wallet or handles a seed phrase. The way Troia is used is a small browser extension: on a supported storefront checkout it recognises the crypto payment request, offers to settle it with a "Pay with Troy card" button, and — when the shopper accepts — opens the ordinary iyzico card form. That extension is the everyday entry point to everything described below; it holds no keys and signs nothing itself, leaving the payout to Troia's backend.
+
 ## How one payment flows
 
 A single payment moves through four steps, and the order of those steps is the whole safety story.
@@ -37,6 +39,8 @@ Paying a merchant twice for one order is ruled out by construction. Each payout 
 The full flow has been exercised repeatedly: a shopper pays with a Troy card on iyzico's hosted form, and a merchant is settled in USDC on Stellar, with every step in between running on its own. One representative run — settling 80 USDC — is recorded, transaction by transaction, on the [Deployments](./deployments.md) page. The accounting matched the chain to the last unit; the server was then killed and restarted, and nothing was paid, minted, or recorded twice.
 
 That last part is not incidental. Everything Troia knows about money is written to disk before it is believed, and two background watchers read the blockchain directly rather than trusting Troia's own account of events — one to notice money leaving the pool that nobody authorised, the other to re-check each settlement against the chain by an identifier the pool contract itself keeps.
+
+The accusing watcher is no longer only a claim. A payout was deliberately sent straight to the pool contract by hand, bypassing Troia's backend entirely, so that its transaction never reached the list of payouts Troia had authorised. The watcher caught it unprompted, named it as a rogue payout, and wrote it permanently to its own record — where it remains even after the balance was topped back up. The code that caught a staged thief is the code that would catch a real one.
 
 ## Where to go next
 

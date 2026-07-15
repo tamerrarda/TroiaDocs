@@ -10,14 +10,15 @@ The walkthrough is deliberately honest about what a viewer is watching. The runn
 
 ## What the walkthrough shows
 
-The tour has four acts, and they build on one another:
+The tour has five acts, and they build on one another:
 
 1. **The code is real and under test.** Everything compiles, the test suites pass, and the linters are clean.
 2. **You can check the money yourself, offline.** An independent tool re-derives every payment's outcome from published evidence, agrees with an honest report, and rejects a tampered one.
 3. **The money moves in a safe order.** A narrated walk through the payment lifecycle, keeping the honest line between what Troia signed and what actually settled on-chain.
-4. **It has been done for real.** A card charge on the test network drives a payout on Stellar, and the books come back matching the chain.
+4. **It has been done for real.** A card charge on the test network drives a payout on Stellar, the books come back matching the chain, and the pool refills itself.
+5. **A thief gets caught.** An unauthorised payout is flagged by a watcher nobody prompted — the point being that you do not have to trust the operator, not even Troia itself.
 
-The second act is the heart of it. It is the one thing a reviewer cannot get anywhere else: the ability to confirm, without trusting Troia or touching its servers, that each payment settled exactly as intended.
+The second act is the heart of it. It is the one thing a reviewer cannot get anywhere else: the ability to confirm, without trusting Troia or touching its servers, that each payment settled exactly as intended. The fifth is the sharpest, and it has been run for real.
 
 ## Before you begin
 
@@ -90,11 +91,21 @@ Close on the honest boundary. Troia proves what it signed with cryptography that
 
 ## Act 4 — It has been done for real
 
-The narration in Act 3 is not hypothetical. Twice now, a shopper has paid a Troy sandbox card on iyzico's hosted form and a merchant has been settled in USDC on Stellar, with every step in between running unattended. The most recent run settled 80 USDC; the accounting ledger and the pool's on-chain balance agreed to the last unit, and the pool came back larger than it went out because the shopper had paid the commission.
+The narration in Act 3 is not hypothetical. Twice now, a shopper has started at the demonstration storefront, taken up the "Pay with Troy card" browser extension when it offered to settle the checkout, paid with a Troy sandbox card on the iyzico form it opened, and seen a merchant settled in USDC on Stellar — with every step in between running unattended. In the most recent run, the accounting ledger and the pool's on-chain balance agreed to the last unit, and the pool came back larger than it went out because the shopper had paid the commission. About thirty seconds later — the demonstration compresses the real settlement wait of roughly three weeks — a background worker refilled the pool from that same order's lira, so the growth by the commission happens in front of the reviewer rather than in a footnote.
 
-The run can be shown rather than described: open the transaction on a public block explorer, and open the [Deployments](./deployments.md) page beside it. Say out loud what the [Scope & limitations](./scope.md) page also says — that no unauthorised transfer was ever staged, so the alarm that would catch a thief has never yet caught one. Volunteering that is more persuasive than the payout itself.
+The run can be shown rather than described: open the transaction on a public block explorer, and open the [Deployments](./deployments.md) page beside it.
 
-If there is time, kill the server and start it again. Nothing is paid, recorded, or refilled twice, and the settled order still answers for itself — because everything Troia knows about money reached the disk before it was believed.
+## Act 5 — Catch a thief
+
+If there is time, close on the sharpest beat, because it is the one that best explains why any of this matters. With the system running, send a payout straight to the pool contract by hand, bypassing Troia's backend — so its transaction is never written to the list of payouts Troia authorises before it broadcasts them. Nobody tells the watcher to look for it. Within the grace window it pages on its own:
+
+> ROGUE PAYOUT: USDC left the pool in a transaction this operator never authorised — its hash was never written to the pre-broadcast journal.
+
+Say what it means: the watcher reads every outflow from the pool directly off the chain and matches each one against the journal of payouts Troia pre-authorised. An outflow with no match is flagged and written down permanently — and the record survives even after the balance is made whole again. This fired for real on 14 July 2026; the transaction is on the [Deployments](./deployments.md) page.
+
+Then be candid about the edges, because volunteering them is more persuasive than the demo itself: a *different* transaction settling an order, and the watcher's two "we could not see" states, are still exercised by tests rather than on the chain — the [Scope & limitations](./scope.md) page lists exactly which.
+
+If there is time for one more thing, kill the server and start it again. Nothing is paid, recorded, or refilled twice, and the settled order still answers for itself — because everything Troia knows about money reached the disk before it was believed.
 
 :::tip Recording a video
 If you capture this as a video, keep it to three to five minutes and give Act 2 the most room. Show the exit codes explicitly so the pass and the fail are unambiguous. Never fake a payment. End on the tampered-report failure; it is the most memorable and the most convincing beat.
